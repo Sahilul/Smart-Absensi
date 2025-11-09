@@ -1,0 +1,86 @@
+# Smart Absensi - Git Ignore
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Database backups
+*.sql
+!absen.sql
+database_*.sql
+
+# Uploads (user generated content)
+public/uploads/*
+!public/uploads/.gitkeep
+public/img/kop/*
+!public/img/kop/.gitkeep
+public/img/ttd/*
+!public/img/ttd/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Backup files
+*.backup
+*.bak
+*_backup.php
+*_old.php
+*.zip
+*.rar
+*.tar
+*.gz
+
+# Documentation (sudah dihapus)
+CHANGELOG*.md
+INSTRUKSI*.md
+OPTIMASI*.md
+PANDUAN*.md
+QR_*.md
+README_QR*.md
+SECURITY*.md
+TROUBLESHOOTING*.md
+MANUAL_*.php
+PATCH_*.php
+temp_*.py
+test_*.html
+test_*.php
+
+# Node modules (jika ada)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Composer (jika ada)
+vendor/
+composer.lock
+
+# Build files
+dist/
+build/

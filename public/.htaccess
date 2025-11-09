@@ -1,0 +1,25 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]
+</IfModule>
+
+# Session Configuration untuk mencegah logout saat buka tab baru
+<IfModule mod_php7.c>
+  php_value session.cookie_lifetime 0
+  php_value session.gc_maxlifetime 28800
+  php_value session.cookie_httponly 1
+  php_value session.use_strict_mode 1
+  php_value session.cookie_path /
+  php_value session.cookie_samesite Lax
+</IfModule>
+
+<IfModule mod_php8.c>
+  php_value session.cookie_lifetime 0
+  php_value session.gc_maxlifetime 28800
+  php_value session.cookie_httponly 1
+  php_value session.use_strict_mode 1
+  php_value session.cookie_path /
+  php_value session.cookie_samesite Lax
+</IfModule>
