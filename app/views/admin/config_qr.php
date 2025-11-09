@@ -43,36 +43,33 @@
                                class="mt-1 w-4 h-4 text-blue-600">
                         <div class="flex-1">
                             <div class="font-semibold text-slate-800">QR Server (Recommended)</div>
-                            <div class="text-sm text-slate-500 mt-1">https://api.qrserver.com - Free & Reliable</div>
+                            <div class="text-sm text-slate-500 mt-1">https://api.qrserver.com - Free & Reliable ✅</div>
                         </div>
                     </label>
-                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition-colors">
-                        <input type="radio" name="qr_provider" value="quickchart"
-                               <?= ($data['config']['QR_API_PROVIDER'] ?? '') === 'quickchart' ? 'checked' : '' ?>
+                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl opacity-50 cursor-not-allowed">
+                        <input type="radio" name="qr_provider" value="quickchart" disabled
                                class="mt-1 w-4 h-4 text-blue-600">
                         <div class="flex-1">
-                            <div class="font-semibold text-slate-800">QuickChart</div>
-                            <div class="text-sm text-slate-500 mt-1">https://quickchart.io/qr – Cepat, mendukung margin & EC level</div>
-                        </div>
-                    </label>
-                    
-                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition-colors">
-                        <input type="radio" name="qr_provider" value="goqr"
-                               <?= ($data['config']['QR_API_PROVIDER'] ?? '') === 'goqr' ? 'checked' : '' ?>
-                               class="mt-1 w-4 h-4 text-blue-600">
-                        <div class="flex-1">
-                            <div class="font-semibold text-slate-800">GoQR.me</div>
-                            <div class="text-sm text-slate-500 mt-1">Alternative QR Code Generator</div>
+                            <div class="font-semibold text-slate-800">QuickChart <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Sementara Disabled</span></div>
+                            <div class="text-sm text-slate-500 mt-1">https://quickchart.io/qr – Gunakan QR Server saja</div>
                         </div>
                     </label>
                     
-                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition-colors">
-                        <input type="radio" name="qr_provider" value="custom"
-                               <?= ($data['config']['QR_API_PROVIDER'] ?? '') === 'custom' ? 'checked' : '' ?>
+                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl opacity-50 cursor-not-allowed">
+                        <input type="radio" name="qr_provider" value="goqr" disabled
                                class="mt-1 w-4 h-4 text-blue-600">
                         <div class="flex-1">
-                            <div class="font-semibold text-slate-800">Custom URL</div>
-                            <div class="text-sm text-slate-500 mt-1">Gunakan API QR Code custom Anda sendiri</div>
+                            <div class="font-semibold text-slate-800">GoQR.me <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Sementara Disabled</span></div>
+                            <div class="text-sm text-slate-500 mt-1">Gunakan QR Server saja</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-xl opacity-50 cursor-not-allowed">
+                        <input type="radio" name="qr_provider" value="custom" disabled
+                               class="mt-1 w-4 h-4 text-blue-600">
+                        <div class="flex-1">
+                            <div class="font-semibold text-slate-800">Custom URL <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Sementara Disabled</span></div>
+                            <div class="text-sm text-slate-500 mt-1">Gunakan QR Server saja</div>
                         </div>
                     </label>
                 </div>
@@ -146,9 +143,9 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-2">Ukuran Tampilan di PDF</label>
                     <input type="number" name="qr_display_size" 
                            value="<?= $data['config']['QR_DISPLAY_SIZE'] ?? '60' ?>"
-                        <option value="bottom-left" <?= ($data['config']['QR_POSITION'] ?? 'bottom-right') === 'bottom-left' ? 'selected' : '' ?>>Kiri Bawah</option>
-                        <option value="bottom-right" <?= ($data['config']['QR_POSITION'] ?? 'bottom-right') === 'bottom-right' ? 'selected' : '' ?>>Kanan Bawah</option>
-                    <p class="text-xs text-slate-500 mt-1">Dalam pixel (40-100)</p>
+                           min="40" max="120" step="5"
+                           class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-slate-500 mt-1">Dalam pixel (40-120)</p>
                 </div>
 
                 <div>

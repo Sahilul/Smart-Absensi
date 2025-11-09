@@ -227,6 +227,7 @@
                         $mapel = $jadwal['nama_mapel'] ?? '-';
                         $kelas = $jadwal['nama_kelas'] ?? '-';
                         $id_mapel = $jadwal['id_mapel'] ?? '';
+                        $id_kelas = $jadwal['id_kelas'] ?? '';
 
                         $theme = themeByKelas($kelas);
                         $total = $jumlahPertemuanByPenugasan[$pid] ?? 0;
@@ -339,13 +340,13 @@
                                         <i data-lucide="chevron-right" class="w-4 h-4 seg-right"></i>
                                     </a>
 
-                                    <!-- Absen -->
-                                    <a href="<?= BASEURL; ?>/guru/rincianAbsen?id_mapel=<?= $id_mapel; ?>&periode=semester" class="seg-btn seg-secondary" title="Rincian Absen">
+                                    <!-- Rincian Absen (langsung ke rincianAbsen dengan parameter) -->
+                                    <a href="<?= BASEURL; ?>/guru/rincianAbsen?id_mapel=<?= $id_mapel; ?>&id_kelas=<?= $id_kelas; ?>&periode=semester" class="seg-btn seg-secondary" title="Rincian Absensi">
                                         <div class="seg-left">
                                             <span class="seg-icon">
-                                                <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                                                <i data-lucide="list-checks" class="w-5 h-5"></i>
                                             </span>
-                                            <span class="seg-label">Absen</span>
+                                            <span class="seg-label">Rincian</span>
                                         </div>
                                         <i data-lucide="chevron-right" class="w-4 h-4 seg-right"></i>
                                     </a>

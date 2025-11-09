@@ -219,6 +219,10 @@
                 // Log scan
                 $qrModel->logScan($token, $isValid, $reason);
                 
+                // Get scan statistics
+                $scanCount = $qrModel->getScanCount($token);
+                $firstScan = $qrModel->getFirstScanDate($token);
+                
                 if ($isValid) {
                     // Friendly labels
                     $roleMap = [
@@ -354,10 +358,35 @@
                         <?php endif; ?>
                     </div>
 
-                    <div class="warning-box">
-                        <strong>🔧 Development Note:</strong><br>
-                        Log tercatat. Untuk verifikasi lanjutan (integritas konten), bisa ditambahkan checksum konten dokumen pada saat generate dan diverifikasi ulang di sini.
+                    <!-- Scan Statistics -->
+                    <div class="doc-details" style="background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%); border-left: 4px solid #667eea;">
+                        <h3>📊 Statistik Validasi</h3>
+                        <div class="detail-row">
+                            <span class="detail-label">Total Scan:</span>
+                            <span class="detail-value" style="color: #667eea; font-weight: bold; font-size: 18px;">
+                                <?= $scanCount ?> kali
+                            </span>
+                        </div>
+                        <?php if ($firstScan): 
+                            try {
+                                $firstScanUtc = new DateTime($firstScan, new DateTimeZone('UTC'));
+                                $firstScanUtc->setTimezone(new DateTimeZone('Asia/Jakarta'));
+                                $firstScanLocal = $firstScanUtc->format('d F Y H:i:s');
+                            } catch (Exception $e) {
+                                $firstScanLocal = $firstScan;
+                            }
+                        ?>
+                        <div class="detail-row">
+                            <span class="detail-label">Scan Pertama:</span>
+                            <span class="detail-value"><?= htmlspecialchars($firstScanLocal) ?> WIB</span>
+                        </div>
+                        <?php endif; ?>
+                        <div class="detail-row">
+                            <span class="detail-label">Scan Terakhir:</span>
+                            <span class="detail-value"><?= $dtValidate->format('d F Y H:i:s') ?> WIB</span>
+                        </div>
                     </div>
+
                     <?php
                 } else {
                     ?>

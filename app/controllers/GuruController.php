@@ -84,6 +84,191 @@ class GuruController extends Controller
     }
 
     /**
+     * Rekap Absen: Ringkasan kehadiran per mapel-kelas untuk guru pada semester aktif.
+     * Menampilkan total pertemuan (jurnal), total H/I/S/A dan persentase hadir.
+     */
+    public function rekapAbsen()
+    {
+        $this->data['judul'] = 'Rekap Absensi';
+        $id_guru = $_SESSION['id_ref'] ?? null;
+        $id_semester = $_SESSION['id_semester_aktif'] ?? null;
+        if (!$id_guru || !$id_semester) {
+            $this->view('templates/header', $this->data);
+            $this->loadSidebar();
+            echo '<div class="p-6">Sesi tidak valid.</div>';
+            $this->view('templates/footer', $this->data);
+            return;
+        }
+
+        $rekap = $this->getRekapAbsenMapelKelas($id_guru, $id_semester);
+        $this->data['rekap'] = $rekap;
+
+        $this->view('templates/header', $this->data);
+        $this->loadSidebar();
+        $this->view('guru/rekap_absen', $this->data);
+        $this->view('templates/footer', $this->data);
+    }
+
+    /**
+     * Download PDF rekap absensi per mapel-kelas.
+     */
+    public function downloadRekapAbsenPDF($id_penugasan = null)
+    {
+        $id_guru = $_SESSION['id_ref'] ?? null;
+        $id_semester = $_SESSION['id_semester_aktif'] ?? null;
+        if (!$id_guru || !$id_semester) { echo 'Sesi tidak valid.'; return; }
+        // Allow filter by penugasan (single mapel-kelas)
+        if (!$id_penugasan) { $id_penugasan = $_GET['id_penugasan'] ?? null; }
+        if ($id_penugasan) {
+            $single = $this->getRekapAbsenForPenugasan($id_guru, $id_semester, (int)$id_penugasan);
+            $rekap = $single ? [$single] : [];
+        } else {
+            $rekap = $this->getRekapAbsenMapelKelas($id_guru, $id_semester);
+        }
+        if (empty($rekap)) { echo 'Tidak ada data untuk dicetak.'; return; }
+
+        // Build minimal HTML
+        ob_start();
+        ?>
+        <html><head><meta charset="utf-8"><style>
+        body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#222;}
+        h2{margin:0 0 12px;font-size:16px;text-align:center;}
+        table{width:100%;border-collapse:collapse;margin-top:10px;}
+        th,td{border:1px solid #999;padding:6px;font-size:11px;}
+        th{background:#eee;}
+        .num{text-align:right;}
+        </style></head><body>
+        <h2>Rekap Absensi Semester <?= htmlspecialchars($_SESSION['nama_semester_aktif'] ?? '') ?></h2>
+        <table>
+        <thead><tr>
+            <th>No</th><th>Mapel</th><th>Kelas</th><th>Pertemuan</th>
+            <th>H</th><th>I</th><th>S</th><th>A</th><th>% Hadir</th>
+        </tr></thead><tbody>
+        <?php $no=1; foreach($rekap as $r): $totalPert = (int)$r['total_pertemuan']; $pct = $totalPert>0?round(($r['hadir']/$totalPert)*100,1):0; ?>
+        <tr>
+            <td class="num"><?= $no++ ?></td>
+            <td><?= htmlspecialchars($r['nama_mapel']) ?></td>
+            <td><?= htmlspecialchars($r['nama_kelas']) ?></td>
+            <td class="num"><?= $totalPert ?></td>
+            <td class="num"><?= $r['hadir'] ?></td>
+            <td class="num"><?= $r['izin'] ?></td>
+            <td class="num"><?= $r['sakit'] ?></td>
+            <td class="num"><?= $r['alpha'] ?></td>
+            <td class="num"><?= $pct ?>%</td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody></table>
+        <div style="margin-top:15px;font-size:10px;">Dicetak: <?= date('d/m/Y H:i') ?></div>
+        </body></html>
+        <?php
+        $html = ob_get_clean();
+
+        // Dompdf
+        require_once APPROOT . '/app/core/dompdf/autoload.inc.php';
+        try {
+            $dompdf = new Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            $dompdf->stream('rekap_absensi.pdf', ['Attachment' => false]);
+        } catch (Exception $e) {
+            echo 'Gagal generate PDF: ' . htmlspecialchars($e->getMessage());
+        }
+    }
+
+    /**
+     * Query rekap absensi per mapel-kelas.
+     */
+    private function getRekapAbsenMapelKelas($id_guru, $id_semester)
+    {
+        try {
+            $db = new Database();
+            $sql = "SELECT 
+                        m.id_mapel,
+                        m.nama_mapel,
+                        k.id_kelas,
+                        k.nama_kelas,
+                        COUNT(DISTINCT j.id_jurnal) AS total_pertemuan,
+                        SUM(CASE WHEN a.status_kehadiran='H' THEN 1 ELSE 0 END) AS hadir,
+                        SUM(CASE WHEN a.status_kehadiran='I' THEN 1 ELSE 0 END) AS izin,
+                        SUM(CASE WHEN a.status_kehadiran='S' THEN 1 ELSE 0 END) AS sakit,
+                        SUM(CASE WHEN a.status_kehadiran='A' OR a.status_kehadiran IS NULL THEN 1 ELSE 0 END) AS alpha
+                    FROM penugasan p
+                    JOIN mapel m ON p.id_mapel = m.id_mapel
+                    JOIN kelas k ON p.id_kelas = k.id_kelas
+                    LEFT JOIN jurnal j ON p.id_penugasan = j.id_penugasan
+                    LEFT JOIN absensi a ON j.id_jurnal = a.id_jurnal
+                    WHERE p.id_guru = :id_guru AND p.id_semester = :id_semester
+                    GROUP BY m.id_mapel, k.id_kelas
+                    ORDER BY m.nama_mapel, k.nama_kelas";
+            $db->query($sql);
+            $db->bind('id_guru', $id_guru);
+            $db->bind('id_semester', $id_semester);
+            return $db->resultSet();
+        } catch (Exception $e) {
+            error_log('Error getRekapAbsenMapelKelas: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Rekap untuk satu penugasan (mapel-kelas tertentu)
+     */
+    private function getRekapAbsenForPenugasan($id_guru, $id_semester, $id_penugasan)
+    {
+        try {
+            $db = new Database();
+            $sql = "SELECT 
+                        m.id_mapel,
+                        m.nama_mapel,
+                        k.id_kelas,
+                        k.nama_kelas,
+                        COUNT(DISTINCT j.id_jurnal) AS total_pertemuan,
+                        SUM(CASE WHEN a.status_kehadiran='H' THEN 1 ELSE 0 END) AS hadir,
+                        SUM(CASE WHEN a.status_kehadiran='I' THEN 1 ELSE 0 END) AS izin,
+                        SUM(CASE WHEN a.status_kehadiran='S' THEN 1 ELSE 0 END) AS sakit,
+                        SUM(CASE WHEN a.status_kehadiran='A' THEN 1 ELSE 0 END) AS alpha,
+                        COUNT(a.id_absensi) AS total_row
+                    FROM penugasan p
+                    JOIN mapel m ON p.id_mapel = m.id_mapel
+                    JOIN kelas k ON p.id_kelas = k.id_kelas
+                    LEFT JOIN jurnal j ON p.id_penugasan = j.id_penugasan
+                    LEFT JOIN absensi a ON j.id_jurnal = a.id_jurnal
+                    WHERE p.id_penugasan = :id_penugasan AND p.id_guru = :id_guru AND p.id_semester = :id_semester
+                    GROUP BY m.id_mapel, k.id_kelas";
+            $db->query($sql);
+            $db->bind('id_penugasan', $id_penugasan);
+            $db->bind('id_guru', $id_guru);
+            $db->bind('id_semester', $id_semester);
+            return $db->single();
+        } catch (Exception $e) {
+            error_log('Error getRekapAbsenForPenugasan: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Halaman ringkas rekap untuk satu penugasan (langsung dari Dashboard).
+     */
+    public function rekapAbsenDetail($id_penugasan = null)
+    {
+        $this->data['judul'] = 'Rekap Absensi';
+        $id_guru = $_SESSION["id_ref"] ?? null;
+        $id_semester = $_SESSION['id_semester_aktif'] ?? null;
+        if (!$id_guru || !$id_semester) { header('Location: ' . BASEURL . '/guru'); return; }
+        if (!$id_penugasan) { echo 'Parameter penugasan tidak ditemukan.'; return; }
+
+        $rekap = $this->getRekapAbsenForPenugasan($id_guru, $id_semester, (int)$id_penugasan);
+        $this->data['rekap_detail'] = $rekap;
+        $this->data['id_penugasan'] = (int)$id_penugasan;
+
+        $this->view('templates/header', $this->data);
+        $this->loadSidebar();
+        $this->view('guru/rekap_absen_detail', $this->data);
+        $this->view('templates/footer', $this->data);
+    }
+
+    /**
      * Edit Profil (Guru & Wali Kelas) - username/password
      */
     public function profil()
@@ -221,8 +406,8 @@ class GuruController extends Controller
      */
     public function detailRiwayat($id_mapel)
     {
-        $id_guru = $_SESSION['id_ref'] ?? null;
-        $id_semester = $_SESSION['id_semester_aktif'] ?? null;
+    $id_guru = $_SESSION['id_ref'] ?? null;
+    $id_semester = $_SESSION['id_semester_aktif'] ?? null;
 
         if (!$id_guru || !$id_semester || !$id_mapel) {
             header('Location: ' . BASEURL . '/riwayatJurnal');
@@ -557,13 +742,15 @@ public function prosesEditAbsensi()
         $periode = $_GET['periode'] ?? 'semester';
         $tanggal_mulai = $_GET['tanggal_mulai'] ?? '';
         $tanggal_akhir = $_GET['tanggal_akhir'] ?? '';
-        $id_mapel_filter = $_GET['id_mapel'] ?? $id_mapel;
+    $id_mapel_filter = $_GET['id_mapel'] ?? $id_mapel;
+    $id_kelas_filter = $_GET['id_kelas'] ?? null;
         
         $this->data['filter'] = [
             'periode' => $periode,
             'tanggal_mulai' => $tanggal_mulai,
             'tanggal_akhir' => $tanggal_akhir,
-            'id_mapel' => $id_mapel_filter
+            'id_mapel' => $id_mapel_filter,
+            'id_kelas' => $id_kelas_filter
         ];
         
         // Ambil daftar mapel yang diajar guru
@@ -574,8 +761,11 @@ public function prosesEditAbsensi()
         $this->data['mapel_info'] = null;
         
         if ($id_mapel_filter) {
-            $this->data['mapel_info'] = $this->getMapelInfo($id_guru, $id_semester, $id_mapel_filter);
-            $this->data['rincian_data'] = $this->getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel_filter, $periode, $tanggal_mulai, $tanggal_akhir);
+            $this->data['mapel_info'] = $this->getMapelInfo($id_guru, $id_semester, $id_mapel_filter, $id_kelas_filter);
+            $id_kelas_mapel = $id_kelas_filter ?: ($this->data['mapel_info']['id_kelas'] ?? null);
+            if ($id_kelas_mapel) {
+                $this->data['rincian_data'] = $this->getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel_filter, $id_kelas_mapel, $periode, $tanggal_mulai, $tanggal_akhir);
+            }
         }
         
         $this->view('templates/header', $this->data);
@@ -609,7 +799,8 @@ public function prosesEditAbsensi()
 
         try {
             // Ambil info mapel
-            $mapel_info = $this->getMapelInfo($id_guru, $id_semester, $id_mapel);
+            $id_kelas_req = $_GET['id_kelas'] ?? null;
+            $mapel_info = $this->getMapelInfo($id_guru, $id_semester, $id_mapel, $id_kelas_req);
             if (empty($mapel_info)) {
                 echo "Data mapel tidak ditemukan atau Anda tidak memiliki akses.";
                 return;
@@ -621,7 +812,8 @@ public function prosesEditAbsensi()
             $tanggal_akhir = $_GET['tanggal_akhir'] ?? '';
 
             // Ambil data rincian
-            $rincian_data = $this->getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel, $periode, $tanggal_mulai, $tanggal_akhir);
+            $id_kelas_mapel = $id_kelas_req ?: ($mapel_info['id_kelas'] ?? null);
+            $rincian_data = $id_kelas_mapel ? $this->getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel, $id_kelas_mapel, $periode, $tanggal_mulai, $tanggal_akhir) : ['siswa_data'=>[], 'pertemuan_headers'=>[]];
 
             if (empty($rincian_data['siswa_data'])) {
                 echo "Tidak ada data absensi untuk dicetak.";
@@ -634,7 +826,9 @@ public function prosesEditAbsensi()
                 'tanggal_mulai' => $tanggal_mulai,
                 'tanggal_akhir' => $tanggal_akhir,
                 'tanggal_cetak' => date('d F Y'),
-                'id_mapel' => $id_mapel
+                'id_mapel' => $id_mapel,
+                'id_kelas' => $id_kelas_mapel,
+                'is_pdf' => true
             ];
 
             $renderView = function($viewPath, $data) {
@@ -821,7 +1015,7 @@ public function prosesEditAbsensi()
     {
         try {
             $db = new Database();
-            $sql = "SELECT DISTINCT m.id_mapel, m.nama_mapel, k.nama_kelas
+            $sql = "SELECT DISTINCT p.id_penugasan, m.id_mapel, m.nama_mapel, k.id_kelas, k.nama_kelas
                     FROM penugasan p
                     JOIN mapel m ON p.id_mapel = m.id_mapel  
                     JOIN kelas k ON p.id_kelas = k.id_kelas
@@ -842,22 +1036,25 @@ public function prosesEditAbsensi()
     /**
      * Helper: Ambil info mapel (nama, kelas, dll)
      */
-    private function getMapelInfo($id_guru, $id_semester, $id_mapel)
+    private function getMapelInfo($id_guru, $id_semester, $id_mapel, $id_kelas = null)
     {
         try {
             $db = new Database();
-            $sql = "SELECT m.nama_mapel, k.nama_kelas, g.nama_guru
+            $sql = "SELECT m.id_mapel, k.id_kelas, m.nama_mapel, k.nama_kelas, g.nama_guru
                     FROM penugasan p
                     JOIN mapel m ON p.id_mapel = m.id_mapel
                     JOIN kelas k ON p.id_kelas = k.id_kelas  
                     JOIN guru g ON p.id_guru = g.id_guru
-                    WHERE p.id_guru = :id_guru AND p.id_semester = :id_semester AND m.id_mapel = :id_mapel
+                    WHERE p.id_guru = :id_guru AND p.id_semester = :id_semester AND m.id_mapel = :id_mapel" . ($id_kelas ? " AND k.id_kelas = :id_kelas" : "") . "
                     LIMIT 1";
             
             $db->query($sql);
             $db->bind('id_guru', $id_guru);
             $db->bind('id_semester', $id_semester);
             $db->bind('id_mapel', $id_mapel);
+            if ($id_kelas) {
+                $db->bind('id_kelas', $id_kelas);
+            }
             
             $result = $db->single() ?: [];
             
@@ -877,17 +1074,18 @@ public function prosesEditAbsensi()
     /**
      * Helper: Ambil rincian absen per pertemuan dengan filter
      */
-    private function getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel, $periode, $tanggal_mulai, $tanggal_akhir)
+    private function getRincianAbsenPerPertemuan($id_guru, $id_semester, $id_mapel, $id_kelas, $periode, $tanggal_mulai, $tanggal_akhir)
     {
         try {
             $db = new Database();
             
             // Build WHERE clause berdasarkan periode
-            $whereClause = "p.id_guru = :id_guru AND p.id_semester = :id_semester AND m.id_mapel = :id_mapel";
+            $whereClause = "p.id_guru = :id_guru AND p.id_semester = :id_semester AND m.id_mapel = :id_mapel AND k.id_kelas = :id_kelas";
             $params = [
                 'id_guru' => $id_guru,
                 'id_semester' => $id_semester, 
-                'id_mapel' => $id_mapel
+                'id_mapel' => $id_mapel,
+                'id_kelas' => $id_kelas
             ];
             
             switch ($periode) {
@@ -911,8 +1109,8 @@ public function prosesEditAbsensi()
                     break;
             }
             
-            // Query utama
-            $sql = "SELECT 
+        // Query utama - ambil seluruh siswa dalam kelas pada TP semester ini, dengan kehadiran per jurnal (LEFT JOIN)
+        $sql = "SELECT 
                         s.id_siswa,
                         s.nama_siswa,
                         s.nisn,
@@ -922,14 +1120,17 @@ public function prosesEditAbsensi()
                         j.topik_materi,
                         COALESCE(a.status_kehadiran, 'A') as status_kehadiran,
                         a.waktu_input as waktu_absen,
-                        a.keterangan
+                        a.keterangan,
+                        k.id_kelas,
+                        p.id_penugasan
                     FROM penugasan p
                     JOIN mapel m ON p.id_mapel = m.id_mapel
                     JOIN kelas k ON p.id_kelas = k.id_kelas
-                    JOIN jurnal j ON p.id_penugasan = j.id_penugasan
-                    JOIN keanggotaan_kelas kk ON k.id_kelas = kk.id_kelas
-                    JOIN siswa s ON kk.id_siswa = s.id_siswa
-                    LEFT JOIN absensi a ON j.id_jurnal = a.id_jurnal AND s.id_siswa = a.id_siswa
+            JOIN semester sem ON sem.id_semester = p.id_semester
+            JOIN jurnal j ON p.id_penugasan = j.id_penugasan
+            JOIN keanggotaan_kelas kk ON k.id_kelas = kk.id_kelas AND kk.id_tp = sem.id_tp
+            JOIN siswa s ON kk.id_siswa = s.id_siswa
+            LEFT JOIN absensi a ON j.id_jurnal = a.id_jurnal AND s.id_siswa = a.id_siswa
                     WHERE $whereClause
                     ORDER BY s.nama_siswa ASC, j.tanggal ASC, j.pertemuan_ke ASC";
             

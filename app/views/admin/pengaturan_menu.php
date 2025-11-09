@@ -36,20 +36,20 @@
                     </div>
                 </div>
 
-                <!-- Menu Input Nilai -->
+                <!-- Menu Input Nilai & Rapor -->
                 <div class="border border-secondary-200 rounded-lg p-6 hover:border-primary-300 transition-colors">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <div class="flex items-center mb-2">
                                 <i data-lucide="file-edit" class="w-5 h-5 text-warning-600 mr-2"></i>
-                                <h3 class="text-lg font-semibold text-secondary-800">Menu Input Nilai</h3>
+                                <h3 class="text-lg font-semibold text-secondary-800">Menu Input Nilai & Rapor</h3>
                             </div>
                             <p class="text-secondary-600 text-sm mb-3">
-                                Termasuk: Input Nilai Harian, STS (Sumatif Tengah Semester), SAS (Sumatif Akhir Semester)
+                                Termasuk: Input Nilai (Harian, STS, SAS), Monitoring Nilai, Pengaturan Rapor, Cetak Rapor
                             </p>
                             <div class="bg-secondary-50 rounded px-3 py-2 text-xs text-secondary-600">
                                 <p><strong>Role yang terpengaruh:</strong> Guru, Wali Kelas</p>
-                                <p class="mt-1"><strong>Menu yang di-hide:</strong> Tombol "Input Nilai" di dashboard, section "Input Nilai" di card mapel</p>
+                                <p class="mt-1"><strong>Menu yang di-hide:</strong> Section "Input Nilai" di dashboard guru, "Monitoring Nilai" dan "Cetak Rapor" di sidebar wali kelas</p>
                             </div>
                         </div>
                         <div class="ml-6">
@@ -94,38 +94,6 @@
                                 <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary-600"></div>
                                 <span class="ml-3 text-sm font-medium text-secondary-700 whitespace-nowrap">
                                     <?= $data['menu_pembayaran_enabled'] ? 'Aktif' : 'Nonaktif'; ?>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Menu Cetak/Pengaturan Rapor -->
-                <div class="border border-secondary-200 rounded-lg p-6 hover:border-primary-300 transition-colors">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center mb-2">
-                                <i data-lucide="printer" class="w-5 h-5 text-primary-600 mr-2"></i>
-                                <h3 class="text-lg font-semibold text-secondary-800">Menu Cetak & Pengaturan Rapor</h3>
-                            </div>
-                            <p class="text-secondary-600 text-sm mb-3">
-                                Termasuk: Pengaturan Rapor, Cetak Rapor (role Wali Kelas)
-                            </p>
-                            <div class="bg-secondary-50 rounded px-3 py-2 text-xs text-secondary-600">
-                                <p><strong>Role yang terpengaruh:</strong> Wali Kelas</p>
-                                <p class="mt-1"><strong>Menu yang di-hide:</strong> Section "Cetak Rapor" pada sidebar wali kelas</p>
-                            </div>
-                        </div>
-                        <div class="ml-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" 
-                                       name="menu_rapor" 
-                                       value="1" 
-                                       <?= $data['menu_rapor_enabled'] ? 'checked' : ''; ?>
-                                       class="sr-only peer">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary-600"></div>
-                                <span class="ml-3 text-sm font-medium text-secondary-700 whitespace-nowrap">
-                                    <?= $data['menu_rapor_enabled'] ? 'Aktif' : 'Nonaktif'; ?>
                                 </span>
                             </label>
                         </div>

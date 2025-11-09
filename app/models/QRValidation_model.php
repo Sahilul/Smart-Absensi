@@ -79,6 +79,20 @@ class QRValidation_model {
         $this->db->bind(':nt', $notes);
         $this->db->execute();
     }
+    
+    public function getScanCount($token) {
+        $this->db->query("SELECT COUNT(*) as total FROM {$this->logTable} WHERE token = :tk");
+        $this->db->bind(':tk', $token);
+        $result = $this->db->single();
+        return $result ? (int)$result['total'] : 0;
+    }
+    
+    public function getFirstScanDate($token) {
+        $this->db->query("SELECT MIN(scanned_at) as first_scan FROM {$this->logTable} WHERE token = :tk");
+        $this->db->bind(':tk', $token);
+        $result = $this->db->single();
+        return $result ? $result['first_scan'] : null;
+    }
 
     public function revokeToken($token) {
         $this->db->query("UPDATE {$this->table} SET revoked = 1 WHERE token = :tk");

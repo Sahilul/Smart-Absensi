@@ -1,53 +1,7 @@
 <?php /* File: app/views/guru/rincian_absen_filter.php */ ?>
 
 <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gradient-to-br from-secondary-50 to-secondary-100 p-6">
-    <!-- Header -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold text-secondary-800 flex items-center">
-                    <i data-lucide="calendar-check" class="w-8 h-8 mr-3 text-primary-500"></i>
-                    Rincian Absen per Pertemuan
-                </h2>
-                <p class="text-secondary-600 mt-2">Analisis detail kehadiran siswa per pertemuan dengan filter periode</p>
-            </div>
-            <div class="hidden md:block">
-                <div class="gradient-primary p-3 rounded-xl">
-                    <i data-lucide="table" class="w-6 h-6 text-white"></i>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <?php if (empty($data['filter']['id_mapel'])): ?>
-    <!-- Filter Panel - Hanya muncul jika belum pilih mapel -->
-    <div class="glass-effect rounded-xl p-6 border border-white/20 shadow-lg mb-8">
-        <h3 class="text-lg font-semibold text-secondary-800 mb-4 flex items-center">
-            <i data-lucide="book-open" class="w-5 h-5 mr-2"></i>
-            Pilih Mata Pelajaran
-        </h3>
-        
-        <form method="GET" action="<?= BASEURL; ?>/guru/rincianAbsen" class="space-y-4">
-            <input type="hidden" name="periode" value="semester">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Pilih Mapel -->
-                <div>
-                    <label class="block text-sm font-medium text-secondary-700 mb-2">
-                        Mata Pelajaran
-                    </label>
-                    <select name="id_mapel" required onchange="this.form.submit()" class="w-full px-3 py-2.5 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white">
-                        <option value="">Pilih Mata Pelajaran</option>
-                        <?php foreach ($data['daftar_mapel'] as $mapel): ?>
-                            <option value="<?= $mapel['id_mapel']; ?>">
-                                <?= htmlspecialchars($mapel['nama_mapel'] . ' - ' . $mapel['nama_kelas']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            </div>
-        </form>
-    </div>
-    <?php endif; ?>
 
     <!-- Data Display -->
     <?php if (!empty($data['rincian_data']['siswa_data'])): ?>
@@ -59,12 +13,7 @@
                     <?= htmlspecialchars($data['mapel_info']['nama_mapel'] ?? '-'); ?> - <?= htmlspecialchars($data['mapel_info']['nama_kelas'] ?? '-'); ?>
                 </h3>
                 <div class="flex gap-2">
-                    <a href="<?= BASEURL; ?>/guru/rincianAbsen" 
-                       class="inline-flex items-center px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                        Ganti Mapel
-                    </a>
-                    <a href="<?= BASEURL; ?>/guru/downloadRincianAbsenPDF/<?= urlencode($data['filter']['id_mapel']); ?>?periode=semester" 
+                    <a href="<?= BASEURL; ?>/guru/downloadRincianAbsenPDF/<?= urlencode($data['filter']['id_mapel']); ?>?periode=<?= urlencode($data['filter']['periode'] ?? 'semester'); ?><?= !empty($data['filter']['id_kelas']) ? '&id_kelas=' . urlencode($data['filter']['id_kelas']) : '' ?><?= !empty($data['filter']['tanggal_mulai']) ? '&tanggal_mulai=' . urlencode($data['filter']['tanggal_mulai']) : '' ?><?= !empty($data['filter']['tanggal_akhir']) ? '&tanggal_akhir=' . urlencode($data['filter']['tanggal_akhir']) : '' ?>" 
                        class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm">
                         <i data-lucide="download" class="w-4 h-4 mr-2"></i>
                         Download PDF
@@ -189,46 +138,22 @@
             </div>
             <h3 class="text-xl font-semibold text-secondary-800 mb-3">Tidak Ada Data</h3>
             <p class="text-secondary-600 mb-6">
-                Tidak ada data absensi untuk periode yang dipilih. Coba ubah filter atau periode lain.
+                Tidak ada data absensi untuk mata pelajaran dan kelas ini pada periode yang dipilih.
             </p>
-        </div>
-
-    <?php else: ?>
-        <!-- Select Mapel First -->
-        <div class="glass-effect rounded-xl p-12 border border-white/20 shadow-lg text-center">
-            <div class="gradient-primary p-4 rounded-2xl inline-flex mb-6">
-                <i data-lucide="book-open" class="w-12 h-12 text-white"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-secondary-800 mb-3">Pilih Mata Pelajaran</h3>
-            <p class="text-secondary-600 mb-6">
-                Silakan pilih mata pelajaran terlebih dahulu untuk melihat rincian absensi per pertemuan.
-            </p>
+            <a href="<?= BASEURL; ?>/guru/dashboard" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Kembali ke Dashboard
+            </a>
         </div>
     <?php endif; ?>
 
 </main>
 
 <script>
-// Toggle custom date inputs
-function toggleCustomDate() {
-    const periode = document.getElementById('periode').value;
-    const tanggalMulaiDiv = document.getElementById('tanggal-mulai-div');
-    const tanggalAkhirDiv = document.getElementById('tanggal-akhir-div');
-    
-    if (periode === 'custom') {
-        tanggalMulaiDiv.style.display = 'block';
-        tanggalAkhirDiv.style.display = 'block';
-    } else {
-        tanggalMulaiDiv.style.display = 'none';
-        tanggalAkhirDiv.style.display = 'none';
-    }
-}
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
-    toggleCustomDate();
 });
 </script>

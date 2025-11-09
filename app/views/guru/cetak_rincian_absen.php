@@ -12,7 +12,8 @@ function getStatusSymbol($status) {
   }
 }
 
-$isPdfMode = isset($_GET['pdf']) && $_GET['pdf'] == '1';
+// Mode PDF: ditandai oleh flag dari controller atau query ?pdf=1
+$isPdfMode = (!empty($filter_info['is_pdf'])) || (isset($_GET['pdf']) && $_GET['pdf'] == '1');
 
 // Periode header
 $periode_text = '';
@@ -41,6 +42,9 @@ if (!empty($filter_info['id_mapel'])) {
 }
 if (!empty($filter_info['periode'])) {
     $backParams['periode'] = $filter_info['periode'];
+}
+if (!empty($filter_info['id_kelas'])) {
+  $backParams['id_kelas'] = $filter_info['id_kelas'];
 }
 if (!empty($filter_info['tanggal_mulai'])) {
     $backParams['tanggal_mulai'] = $filter_info['tanggal_mulai'];

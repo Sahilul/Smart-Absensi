@@ -75,15 +75,22 @@ class PDFQRHelper {
                 return $html; // Return original if QR fails
             }
             
-            // Add position: relative to body if not present (avoid duplicating style)
-            if (stripos($html, '<body') !== false && stripos($html, 'position: relative') === false) {
-                $html = preg_replace('/<body(\s[^>]*)?>/i', '<body$1 style="position: relative">', $html, 1) ?: $html;
+            // Pastikan body atau container utama punya position relative
+            // Cari tag body dan tambahkan style jika belum ada
+            if (stripos($html, '<body') !== false) {
+                // Jika body sudah punya style, tambahkan position relative
+                if (preg_match('/<body([^>]*style=["\'][^"\']*["\'][^>]*)>/i', $html)) {
+                    $html = preg_replace('/<body([^>]*style=["\'])([^"\']*)/i', '<body$1position: relative; $2', $html, 1);
+                } else {
+                    // Jika belum ada style attribute, tambahkan
+                    $html = preg_replace('/<body([^>]*)>/i', '<body$1 style="position: relative;">', $html, 1);
+                }
             }
             
             // Get QR HTML
             $qrHtml = getQRCodeHTML($qrCode);
             
-            // Insert QR code before closing body; if </body> missing append at end
+            // Insert QR code before closing body tag (hanya akan muncul di halaman terakhir)
             if (stripos($html, '</body>') !== false) {
                 $html = str_ireplace('</body>', $qrHtml . '</body>', $html);
             } else {

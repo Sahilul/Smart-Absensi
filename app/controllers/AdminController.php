@@ -2904,9 +2904,16 @@ private function _getMapelListSafe() {
         // Add helper functions
         $configContent .= "function getQRCodeApiUrl(\$data) {\n";
         $configContent .= "    \$encodedData = urlencode(\$data);\n";
+        $configContent .= "    // Parse size dari format \"250x250\" ke integer untuk provider yang membutuhkan\n";
+        $configContent .= "    \$sizeInt = (int)explode('x', QR_SIZE)[0];\n";
+        $configContent .= "    \n";
         $configContent .= "    switch (QR_API_PROVIDER) {\n";
         $configContent .= "        case 'qrserver':\n";
         $configContent .= "            return QR_API_QRSERVER . '?size=' . QR_SIZE . '&data=' . \$encodedData;\n";
+        $configContent .= "        case 'quickchart':\n";
+        $configContent .= "            return 'https://quickchart.io/qr?text=' . \$encodedData . '&size=' . \$sizeInt;\n";
+        $configContent .= "        case 'goqr':\n";
+        $configContent .= "            return 'https://api.qrserver.com/v1/create-qr-code/?size=' . QR_SIZE . '&data=' . \$encodedData;\n";
         $configContent .= "        case 'custom':\n";
         $configContent .= "            return str_replace(['{DATA}', '{SIZE}'], [\$encodedData, QR_SIZE], QR_CUSTOM_URL);\n";
         $configContent .= "        default:\n";
@@ -2916,6 +2923,103 @@ private function _getMapelListSafe() {
         $configContent .= "function generateQRToken(\$siswaId, \$jenisRapor, \$nisn) {\n";
         $configContent .= "    \$data = \$siswaId . '|' . \$jenisRapor . '|' . \$nisn . '|' . QR_TOKEN_SALT;\n";
         $configContent .= "    return hash('sha256', \$data);\n";
+        $configContent .= "}\n\n";
+        
+        // Add generatePDFQRCode function
+        $configContent .= "/**\n";
+        $configContent .= " * Generate PDF QR Code with validation token\n";
+        $configContent .= " * @param string \$docType Document type (rapor, pembayaran, absensi, performa_guru, performa_siswa, etc)\n";
+        $configContent .= " * @param mixed \$docId Document identifier\n";
+        $configContent .= " * @param array \$additionalData Extra metadata for validation\n";
+        $configContent .= " * @return string Base64 QR code image data URL\n";
+        $configContent .= " */\n";
+        $configContent .= "function generatePDFQRCode(\$docType, \$docId, \$additionalData = []) {\n";
+        $configContent .= "    try {\n";
+        $configContent .= "        // Create validation token\n";
+        $configContent .= "        \$tokenData = [\n";
+        $configContent .= "            'doc_type' => \$docType,\n";
+        $configContent .= "            'doc_id' => \$docId,\n";
+        $configContent .= "            'timestamp' => time(),\n";
+        $configContent .= "            'expires' => time() + (QR_TOKEN_EXPIRY * 24 * 60 * 60)\n";
+        $configContent .= "        ];\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Merge additional data\n";
+        $configContent .= "        if (!empty(\$additionalData)) {\n";
+        $configContent .= "            \$tokenData = array_merge(\$tokenData, \$additionalData);\n";
+        $configContent .= "        }\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Create secure token\n";
+        $configContent .= "        \$token = hash_hmac('sha256', json_encode(\$tokenData), QR_TOKEN_SALT);\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Save token to database for validation\n";
+        $configContent .= "        try {\n";
+        $configContent .= "            \$APPROOT = realpath(__DIR__ . '/..');\n";
+        $configContent .= "            require_once \$APPROOT . '/config/database.php';\n";
+        $configContent .= "            require_once \$APPROOT . '/app/core/Database.php';\n";
+        $configContent .= "            require_once \$APPROOT . '/app/models/QRValidation_model.php';\n";
+        $configContent .= "            \$qrModel = new QRValidation_model();\n";
+        $configContent .= "            \$qrModel->ensureTables(); // Create table if not exists\n";
+        $configContent .= "            \n";
+        $configContent .= "            // Store token with correct parameters\n";
+        $configContent .= "            \$expiryDays = QR_TOKEN_EXPIRY > 0 ? (int)QR_TOKEN_EXPIRY : 0;\n";
+        $configContent .= "            \$identifier = \$docId; // Use doc ID as identifier\n";
+        $configContent .= "            \n";
+        $configContent .= "            // Save token using storeToken method\n";
+        $configContent .= "            \$qrModel->storeToken(\$docType, \$docId, \$identifier, \$token, \$expiryDays, \$additionalData);\n";
+        $configContent .= "        } catch (Exception \$e) {\n";
+        $configContent .= "            error_log('Failed to save QR token to database: ' . \$e->getMessage());\n";
+        $configContent .= "            // Continue anyway - QR will still be generated\n";
+        $configContent .= "        }\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Create validation URL\n";
+        $configContent .= "        \$validationUrl = QR_WEBSITE_URL . '/validate?token=' . \$token . '&type=' . urlencode(\$docType);\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Get QR code image from API\n";
+        $configContent .= "        \$qrApiUrl = getQRCodeApiUrl(\$validationUrl);\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Fetch QR code image\n";
+        $configContent .= "        \$qrImageData = @file_get_contents(\$qrApiUrl);\n";
+        $configContent .= "        \n";
+        $configContent .= "        if (\$qrImageData === false) {\n";
+        $configContent .= "            error_log('Failed to generate QR code from API: ' . \$qrApiUrl);\n";
+        $configContent .= "            return '';\n";
+        $configContent .= "        }\n";
+        $configContent .= "        \n";
+        $configContent .= "        // Convert to base64 data URL\n";
+        $configContent .= "        \$base64 = base64_encode(\$qrImageData);\n";
+        $configContent .= "        return 'data:image/png;base64,' . \$base64;\n";
+        $configContent .= "        \n";
+        $configContent .= "    } catch (Exception \$e) {\n";
+        $configContent .= "        error_log('QR code generation error: ' . \$e->getMessage());\n";
+        $configContent .= "        return '';\n";
+        $configContent .= "    }\n";
+        $configContent .= "}\n\n";
+        
+        // Add getQRCodeHTML function
+        $configContent .= "function getQRCodeHTML(\$qrCodeDataUrl) {\n";
+        $configContent .= "    \$position = QR_POSITION;\n";
+        $configContent .= "    \$displaySize = QR_DISPLAY_SIZE;\n";
+        $configContent .= "    \$displayText = QR_DISPLAY_TEXT;\n";
+        $configContent .= "    \n";
+        $configContent .= "    // Position styles - menggunakan absolute agar hanya di halaman terakhir\n";
+        $configContent .= "    \$positionStyles = [\n";
+        $configContent .= "        'bottom-right' => 'bottom: 5mm; right: 5mm;',\n";
+        $configContent .= "        'bottom-left' => 'bottom: 5mm; left: 5mm;',\n";
+        $configContent .= "        'top-right' => 'top: 5mm; right: 5mm;',\n";
+        $configContent .= "        'top-left' => 'top: 5mm; left: 5mm;',\n";
+        $configContent .= "    ];\n";
+        $configContent .= "    \n";
+        $configContent .= "    \$style = \$positionStyles[\$position] ?? \$positionStyles['bottom-right'];\n";
+        $configContent .= "    \n";
+        $configContent .= "    // Gunakan position absolute dan taruh di akhir document\n";
+        $configContent .= "    \$html = '<div style=\"position: absolute; ' . \$style . ' text-align: center; background: white; padding: 5px; border: 1px solid #ddd; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);\">';\n";
+        $configContent .= "    \$html .= '<img src=\"' . htmlspecialchars(\$qrCodeDataUrl) . '\" style=\"width: ' . \$displaySize . '; height: ' . \$displaySize . '; display: block;\" alt=\"QR Code\">';\n";
+        $configContent .= "    if (!empty(\$displayText)) {\n";
+        $configContent .= "        \$html .= '<div style=\"font-size: 7px; color: #666; margin-top: 2px;\">' . htmlspecialchars(\$displayText) . '</div>';\n";
+        $configContent .= "    }\n";
+        $configContent .= "    \$html .= '</div>';\n";
+        $configContent .= "    \n";
+        $configContent .= "    return \$html;\n";
         $configContent .= "}\n";
 
         // Save to file
@@ -3002,7 +3106,6 @@ private function _getMapelListSafe() {
 
         $inputNilaiEnabled = true;
         $pembayaranEnabled = true;
-        $raporEnabled = true;
 
         if ($configContent !== false && $configContent !== '') {
             if (preg_match("/define\('MENU_INPUT_NILAI_ENABLED',\s*(true|false)\)/", $configContent, $matchNilai)) {
@@ -3011,14 +3114,10 @@ private function _getMapelListSafe() {
             if (preg_match("/define\('MENU_PEMBAYARAN_ENABLED',\s*(true|false)\)/", $configContent, $matchPembayaran)) {
                 $pembayaranEnabled = $matchPembayaran[1] === 'true';
             }
-            if (preg_match("/define\('MENU_RAPOR_ENABLED',\s*(true|false)\)/", $configContent, $matchRapor)) {
-                $raporEnabled = $matchRapor[1] === 'true';
-            }
         }
 
         $this->data['menu_input_nilai_enabled'] = $inputNilaiEnabled;
         $this->data['menu_pembayaran_enabled'] = $pembayaranEnabled;
-        $this->data['menu_rapor_enabled'] = $raporEnabled;
 
         $this->view('templates/header', $this->data);
         $this->view('templates/sidebar_admin', $this->data);
@@ -3033,9 +3132,8 @@ private function _getMapelListSafe() {
             exit;
         }
 
-    $inputNilaiEnabled = isset($_POST['menu_input_nilai']) ? 'true' : 'false';
-    $pembayaranEnabled = isset($_POST['menu_pembayaran']) ? 'true' : 'false';
-    $raporEnabled = isset($_POST['menu_rapor']) ? 'true' : 'false';
+        $inputNilaiEnabled = isset($_POST['menu_input_nilai']) ? 'true' : 'false';
+        $pembayaranEnabled = isset($_POST['menu_pembayaran']) ? 'true' : 'false';
 
         try {
             $configPath = __DIR__ . '/../../config/config.php';
@@ -3051,7 +3149,7 @@ private function _getMapelListSafe() {
             $patterns = [
                 "/define\('MENU_INPUT_NILAI_ENABLED',\s*(true|false)\);/" => "define('MENU_INPUT_NILAI_ENABLED', {$inputNilaiEnabled});",
                 "/define\('MENU_PEMBAYARAN_ENABLED',\s*(true|false)\);/" => "define('MENU_PEMBAYARAN_ENABLED', {$pembayaranEnabled});",
-                "/define\('MENU_RAPOR_ENABLED',\s*(true|false)\);/" => "define('MENU_RAPOR_ENABLED', {$raporEnabled});"
+                "/define\('MENU_RAPOR_ENABLED',\s*(true|false)\);/" => "define('MENU_RAPOR_ENABLED', {$inputNilaiEnabled});"
             ];
 
             foreach ($patterns as $pattern => $replacement) {
@@ -3081,6 +3179,167 @@ private function _getMapelListSafe() {
         }
 
         header('Location: ' . BASEURL . '/admin/pengaturanMenu');
+        exit;
+    }
+
+    // =================================================================
+    // PROFIL & GANTI SANDI ADMIN
+    // =================================================================
+    
+    public function profil()
+    {
+        $this->data['judul'] = 'Profil Admin';
+        $id_user = $_SESSION['user_id'] ?? 0;
+        
+        if (!$id_user) {
+            header('Location: ' . BASEURL . '/admin/dashboard');
+            exit;
+        }
+
+        try {
+            $db = new Database();
+            $db->query("SELECT * FROM users WHERE id_user = :id_user AND role = 'admin' LIMIT 1");
+            $db->bind('id_user', $id_user);
+            $admin = $db->single();
+            
+            if (!$admin) {
+                Flasher::setFlash('Data admin tidak ditemukan.', 'danger');
+                header('Location: ' . BASEURL . '/admin/dashboard');
+                exit;
+            }
+            
+            $this->data['admin'] = $admin;
+        } catch (Exception $e) {
+            error_log('Error profil admin: ' . $e->getMessage());
+            Flasher::setFlash('Terjadi kesalahan saat memuat profil.', 'danger');
+            header('Location: ' . BASEURL . '/admin/dashboard');
+            exit;
+        }
+
+        $this->view('templates/header', $this->data);
+        $this->view('templates/sidebar_admin', $this->data);
+        $this->view('admin/profil', $this->data);
+        $this->view('templates/footer', $this->data);
+    }
+
+    public function simpanProfil()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASEURL . '/admin/profil');
+            exit;
+        }
+
+        $id_user = $_SESSION['user_id'] ?? 0;
+        if (!$id_user) {
+            header('Location: ' . BASEURL . '/admin/profil');
+            exit;
+        }
+
+        $username = trim($_POST['username'] ?? '');
+        $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
+
+        if (empty($username)) {
+            Flasher::setFlash('Username tidak boleh kosong.', 'danger');
+            header('Location: ' . BASEURL . '/admin/profil');
+            exit;
+        }
+
+        try {
+            $db = new Database();
+            
+            // Cek apakah username sudah digunakan oleh user lain
+            $db->query("SELECT id_user FROM users WHERE username = :username AND id_user != :id_user LIMIT 1");
+            $db->bind('username', $username);
+            $db->bind('id_user', $id_user);
+            $exists = $db->single();
+            
+            if ($exists) {
+                Flasher::setFlash('Username sudah digunakan oleh user lain.', 'danger');
+                header('Location: ' . BASEURL . '/admin/profil');
+                exit;
+            }
+            
+            // Update profil
+            $db->query("UPDATE users SET username = :username, nama_lengkap = :nama_lengkap WHERE id_user = :id_user");
+            $db->bind('username', $username);
+            $db->bind('nama_lengkap', $nama_lengkap);
+            $db->bind('id_user', $id_user);
+            $db->execute();
+            
+            // Update session
+            $_SESSION['username'] = $username;
+            $_SESSION['nama_lengkap'] = $nama_lengkap;
+            
+            Flasher::setFlash('Profil berhasil diperbarui.', 'success');
+        } catch (Exception $e) {
+            error_log('Error simpanProfil admin: ' . $e->getMessage());
+            Flasher::setFlash('Terjadi kesalahan saat menyimpan profil.', 'danger');
+        }
+
+        header('Location: ' . BASEURL . '/admin/profil');
+        exit;
+    }
+
+    public function gantiSandi()
+    {
+        $this->data['judul'] = 'Ganti Sandi';
+        
+        $this->view('templates/header', $this->data);
+        $this->view('templates/sidebar_admin', $this->data);
+        $this->view('admin/ganti_sandi', $this->data);
+        $this->view('templates/footer', $this->data);
+    }
+
+    public function simpanSandi()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASEURL . '/admin/gantiSandi');
+            exit;
+        }
+
+        $id_user = $_SESSION['user_id'] ?? 0;
+        if (!$id_user) {
+            header('Location: ' . BASEURL . '/admin/gantiSandi');
+            exit;
+        }
+
+        $password = trim($_POST['password'] ?? '');
+        $password2 = trim($_POST['password2'] ?? '');
+
+        if (empty($password) || empty($password2)) {
+            Flasher::setFlash('Password dan konfirmasi wajib diisi.', 'danger');
+            header('Location: ' . BASEURL . '/admin/gantiSandi');
+            exit;
+        }
+
+        if ($password !== $password2) {
+            Flasher::setFlash('Konfirmasi password tidak cocok.', 'danger');
+            header('Location: ' . BASEURL . '/admin/gantiSandi');
+            exit;
+        }
+
+        if (strlen($password) < 6) {
+            Flasher::setFlash('Password minimal 6 karakter.', 'danger');
+            header('Location: ' . BASEURL . '/admin/gantiSandi');
+            exit;
+        }
+
+        try {
+            $db = new Database();
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            $db->query("UPDATE users SET password = :password WHERE id_user = :id_user");
+            $db->bind('password', $hashedPassword);
+            $db->bind('id_user', $id_user);
+            $db->execute();
+            
+            Flasher::setFlash('Password berhasil diperbarui.', 'success');
+        } catch (Exception $e) {
+            error_log('Error simpanSandi admin: ' . $e->getMessage());
+            Flasher::setFlash('Terjadi kesalahan saat menyimpan password.', 'danger');
+        }
+
+        header('Location: ' . BASEURL . '/admin/gantiSandi');
         exit;
     }
 }

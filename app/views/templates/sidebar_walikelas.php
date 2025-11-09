@@ -83,6 +83,7 @@
       </li>
 
       <!-- Monitoring Nilai -->
+      <?php if (defined('MENU_INPUT_NILAI_ENABLED') && MENU_INPUT_NILAI_ENABLED): ?>
       <li>
         <a href="<?= BASEURL; ?>/waliKelas/monitoringNilai" 
            class="group flex items-center p-3 text-sm font-semibold rounded-xl transition-all duration-200 <?= ($judul == 'Monitoring Nilai') ? 'gradient-primary text-white shadow-lg' : 'text-secondary-600 hover:bg-white/60 hover:text-secondary-800'; ?>">
@@ -92,6 +93,7 @@
           <span class="ml-3 whitespace-nowrap">Monitoring Nilai</span>
         </a>
       </li>
+      <?php endif; ?>
 
       <!-- Pembayaran -->
       <?php if (defined('MENU_PEMBAYARAN_ENABLED') && MENU_PEMBAYARAN_ENABLED): ?>
@@ -107,7 +109,7 @@
       </li>
       <?php endif; ?>
 
-      <?php if (defined('MENU_RAPOR_ENABLED') && MENU_RAPOR_ENABLED): ?>
+      <?php if (defined('MENU_INPUT_NILAI_ENABLED') && MENU_INPUT_NILAI_ENABLED): ?>
       <!-- Section: Cetak Rapor -->
       <li class="pt-6 pb-2">
         <div class="flex items-center px-3">

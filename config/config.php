@@ -41,8 +41,8 @@ define('SECRET_KEY', 'absen_qr_secret_key_2024_change_in_production');
 define('QR_ENABLED', true);
 
 // Menu visibility settings (can be changed via Admin > Pengaturan Menu)
-define('MENU_INPUT_NILAI_ENABLED', false);
-define('MENU_PEMBAYARAN_ENABLED', false);
-define('MENU_RAPOR_ENABLED', false);
+define('MENU_INPUT_NILAI_ENABLED', true);
+define('MENU_PEMBAYARAN_ENABLED', true);
+define('MENU_RAPOR_ENABLED', true);
 
 require_once 'database.php';

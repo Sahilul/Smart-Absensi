@@ -32,7 +32,14 @@ class App {
             return; // PENTING: Exit setelah handle monitoring
         }
         
-        // 2. Validasi Rapor (QR Code validation - PUBLIC ACCESS)
+        // 2. QR Code Validation (PUBLIC ACCESS - no login required)
+        if (isset($url[0]) && $url[0] == 'validate') {
+            error_log("App.php - QR Validate route detected (PUBLIC)");
+            $this->handlePublicRoute('ValidateController', $url);
+            return;
+        }
+        
+        // 3. Validasi Rapor (QR Code validation - PUBLIC ACCESS)
         if (isset($url[0]) && $url[0] == 'validasiRapor') {
             error_log("App.php - Validasi Rapor route detected (PUBLIC)");
             $this->handlePublicRoute('ValidasiRaporController', $url);

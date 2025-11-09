@@ -176,7 +176,7 @@ class PerformaSiswaController extends Controller
             
             // Add QR code for document validation
             require_once APPROOT . '/app/core/PDFQRHelper.php';
-            $html = PDFQRHelper::addQRToPDF($html, 'performa_siswa', $id_kelas . '_' . $startDate);
+            $html = PDFQRHelper::addQRToPDF($html, 'performa_siswa', $kelasFilter . '_' . $startDate);
             
             // Load HTML
             $dompdf->loadHtml($html);

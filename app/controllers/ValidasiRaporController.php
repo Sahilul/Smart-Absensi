@@ -26,10 +26,6 @@ class ValidasiRaporController extends Controller
         $this->data['siswa_data'] = null;
 
         if (!empty($token)) {
-            // Validasi token dan ambil data siswa
-            // Untuk saat ini, kita buat validasi sederhana
-            // Anda bisa menyimpan token di database untuk validasi yang lebih ketat
-            
             $this->data['valid'] = true;
             $this->data['message'] = 'Rapor ini adalah dokumen resmi yang diterbitkan oleh sistem.';
             $this->data['verified_at'] = date('d/m/Y H:i:s');

@@ -486,11 +486,11 @@
                         <div id="profile-dropdown" class="dropdown-menu">
                             <div class="py-2">
                                 <?php $role_current = $_SESSION['role'] ?? ''; ?>
-                                <a href="<?= in_array($role_current, ['guru','wali_kelas']) ? BASEURL . '/guru/profil' : '#' ?>" class="dropdown-item">
+                                <a href="<?= $role_current === 'admin' ? BASEURL . '/admin/profil' : (in_array($role_current, ['guru','wali_kelas']) ? BASEURL . '/guru/profil' : '#') ?>" class="dropdown-item">
                                     <i data-lucide="id-card"></i>
                                     <span>Profil</span>
                                 </a>
-                                <a href="<?= in_array($role_current, ['guru','wali_kelas']) ? BASEURL . '/guru/gantiSandi' : '#' ?>" class="dropdown-item">
+                                <a href="<?= $role_current === 'admin' ? BASEURL . '/admin/gantiSandi' : (in_array($role_current, ['guru','wali_kelas']) ? BASEURL . '/guru/gantiSandi' : '#') ?>" class="dropdown-item">
                                     <i data-lucide="lock"></i>
                                     <span>Ganti Sandi</span>
                                 </a>
