@@ -213,7 +213,7 @@
 </div>
 
 <!-- Detail Modal -->
-<div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 p-2 sm:p-4 lg:p-8">
+<div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[9999] p-2 sm:p-4 lg:p-8">
     <div class="flex items-center justify-center min-h-full">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden">
             <!-- Modal Header -->
@@ -288,7 +288,7 @@
 </div>
 
 <!-- Jurnal Modal -->
-<div id="jurnal-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 p-2 sm:p-4 lg:p-8">
+<div id="jurnal-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[9999] p-2 sm:p-4 lg:p-8">
     <div class="flex items-center justify-center min-h-full">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
             <!-- Modal Header -->
